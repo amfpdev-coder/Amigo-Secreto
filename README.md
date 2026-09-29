@@ -27,7 +27,7 @@ Aplicação web de sorteio de amigo secreto com modo local e online em tempo rea
 2. Escolha entre jogar no mesmo dispositivo ou criar uma sala online
 3. Opcional: defina uma regra no campo abaixo do título (ex: "Presentes até R$80")
 4. Cadastre os participantes e inicie o sorteio
-5. Pode acessar o site também:
+5. Pode acessar o site também: https://amigo-secreto-amber-nine.vercel.app/
 
 ## Estrutura
 
