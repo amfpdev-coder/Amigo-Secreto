@@ -208,6 +208,7 @@ const ctx = canvas.getContext('2d');
 function mostrarTela(id) {
   document.querySelectorAll('.view').forEach(el => el.classList.add('hidden'));
   $(id).classList.remove('hidden');
+  if (id !== 'telaRoleta') pararLuzes();
 }
 
 // ==========================================
@@ -255,36 +256,250 @@ function gerarCodigoSala() {
 // ==========================================
 //  ROLETA (Canvas)
 // ==========================================
+let luzFrame = 0;
+let luzAnimId = null;
+
 function desenharRoleta(nomes) {
   const fatia = (2 * Math.PI) / nomes.length;
   const cores = coresRoleta;
-  const raio = canvas.width / 2;
+  const centro = canvas.width / 2;
+  const raioTotal = centro;
+  const bordaLarg = 18;
+  const raioInterno = raioTotal - bordaLarg;
+  const raioCentro = 28;
 
   ctx.clearRect(0, 0, canvas.width, canvas.height);
 
+  // Sombra externa
+  ctx.save();
+  ctx.beginPath();
+  ctx.arc(centro, centro, raioTotal - 2, 0, Math.PI * 2);
+  ctx.shadowColor = 'rgba(0,0,0,0.35)';
+  ctx.shadowBlur = 20;
+  ctx.fillStyle = '#b8860b';
+  ctx.fill();
+  ctx.restore();
+
+  // Borda dourada
+  const bordaGrad = ctx.createRadialGradient(centro - 30, centro - 30, raioTotal * 0.6, centro, centro, raioTotal);
+  bordaGrad.addColorStop(0, '#f5d75e');
+  bordaGrad.addColorStop(0.4, '#d4a017');
+  bordaGrad.addColorStop(0.7, '#b8860b');
+  bordaGrad.addColorStop(1, '#8b6914');
+  ctx.beginPath();
+  ctx.arc(centro, centro, raioTotal - 2, 0, Math.PI * 2);
+  ctx.fillStyle = bordaGrad;
+  ctx.fill();
+
+  // Linha interna da borda
+  ctx.beginPath();
+  ctx.arc(centro, centro, raioInterno + 2, 0, Math.PI * 2);
+  ctx.strokeStyle = '#8b6914';
+  ctx.lineWidth = 1.5;
+  ctx.stroke();
+
+  // Fatias
   nomes.forEach((nome, i) => {
     const inicio = anguloAtual + i * fatia;
     const fim = inicio + fatia;
+    const corBase = cores[i % cores.length];
+    const corClara = cores[(i + 1) % cores.length];
+
+    const grad = ctx.createRadialGradient(centro, centro, raioCentro, centro, centro, raioInterno);
+    grad.addColorStop(0, corClara);
+    grad.addColorStop(1, corBase);
 
     ctx.beginPath();
-    ctx.moveTo(raio, raio);
-    ctx.arc(raio, raio, raio, inicio, fim);
-    ctx.fillStyle = cores[i % cores.length];
+    ctx.moveTo(centro, centro);
+    ctx.arc(centro, centro, raioInterno, inicio, fim);
+    ctx.closePath();
+    ctx.fillStyle = grad;
     ctx.fill();
 
+    // Linha dourada entre fatias
+    ctx.beginPath();
+    ctx.moveTo(centro, centro);
+    ctx.lineTo(
+      centro + Math.cos(inicio) * raioInterno,
+      centro + Math.sin(inicio) * raioInterno
+    );
+    ctx.strokeStyle = '#d4a017';
+    ctx.lineWidth = 2;
+    ctx.stroke();
+
+    // Sparkles nas fatias
+    if (i % 2 === 0) {
+      const sparkAngle = inicio + fatia * 0.35;
+      const sparkR = raioInterno * 0.82;
+      desenharSparkle(
+        centro + Math.cos(sparkAngle) * sparkR,
+        centro + Math.sin(sparkAngle) * sparkR,
+        3
+      );
+    }
+
+    // Texto
     ctx.save();
-    ctx.translate(raio, raio);
+    ctx.translate(centro, centro);
     ctx.rotate(inicio + fatia / 2);
     ctx.fillStyle = '#fff';
-    ctx.font = 'bold 14px Poppins';
+    ctx.font = 'bold 13px Poppins, sans-serif';
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
-    ctx.fillText(capitalize(nome), raio * 0.6, 0);
+    ctx.shadowColor = 'rgba(0,0,0,0.5)';
+    ctx.shadowBlur = 3;
+    const textoNome = capitalize(nome);
+    const maxLarg = raioInterno * 0.42;
+    const textoFinal = ctx.measureText(textoNome).width > maxLarg
+      ? textoNome.slice(0, 8) + '...'
+      : textoNome;
+    ctx.fillText(textoFinal, raioInterno * 0.58, 0);
     ctx.restore();
   });
+
+  // Contorno interno das fatias
+  ctx.beginPath();
+  ctx.arc(centro, centro, raioInterno, 0, Math.PI * 2);
+  ctx.strokeStyle = '#d4a017';
+  ctx.lineWidth = 2.5;
+  ctx.stroke();
+
+  // Luzinhas na borda
+  const numLuzes = 20;
+  const raioLuzes = raioTotal - bordaLarg / 2;
+  for (let i = 0; i < numLuzes; i++) {
+    const ang = (i / numLuzes) * Math.PI * 2 - Math.PI / 2;
+    const x = centro + Math.cos(ang) * raioLuzes;
+    const y = centro + Math.sin(ang) * raioLuzes;
+    const acesa = (i + luzFrame) % 3 !== 0;
+
+    ctx.beginPath();
+    ctx.arc(x, y, 4, 0, Math.PI * 2);
+    if (acesa) {
+      const glow = ctx.createRadialGradient(x, y, 0, x, y, 6);
+      glow.addColorStop(0, '#fffde0');
+      glow.addColorStop(0.5, '#f5d75e');
+      glow.addColorStop(1, 'rgba(245,215,94,0)');
+      ctx.fillStyle = '#fffde0';
+      ctx.fill();
+      ctx.save();
+      ctx.beginPath();
+      ctx.arc(x, y, 7, 0, Math.PI * 2);
+      ctx.fillStyle = glow;
+      ctx.fill();
+      ctx.restore();
+    } else {
+      ctx.fillStyle = '#8b6914';
+      ctx.fill();
+    }
+  }
+
+  // Centro dourado
+  const centroGrad = ctx.createRadialGradient(centro - 6, centro - 6, 2, centro, centro, raioCentro);
+  centroGrad.addColorStop(0, '#f5e6a3');
+  centroGrad.addColorStop(0.5, '#d4a017');
+  centroGrad.addColorStop(1, '#8b6914');
+  ctx.beginPath();
+  ctx.arc(centro, centro, raioCentro, 0, Math.PI * 2);
+  ctx.fillStyle = centroGrad;
+  ctx.fill();
+  ctx.strokeStyle = '#b8860b';
+  ctx.lineWidth = 2;
+  ctx.stroke();
+
+  // Emoji no centro
+  ctx.font = '22px serif';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.shadowColor = 'transparent';
+  ctx.shadowBlur = 0;
+  ctx.fillText('🎁', centro, centro + 1);
+}
+
+function desenharSparkle(x, y, tam) {
+  ctx.save();
+  ctx.fillStyle = 'rgba(255,255,255,0.5)';
+  ctx.beginPath();
+  ctx.moveTo(x, y - tam);
+  ctx.lineTo(x + tam * 0.3, y - tam * 0.3);
+  ctx.lineTo(x + tam, y);
+  ctx.lineTo(x + tam * 0.3, y + tam * 0.3);
+  ctx.lineTo(x, y + tam);
+  ctx.lineTo(x - tam * 0.3, y + tam * 0.3);
+  ctx.lineTo(x - tam, y);
+  ctx.lineTo(x - tam * 0.3, y - tam * 0.3);
+  ctx.closePath();
+  ctx.fill();
+  ctx.restore();
+}
+
+function iniciarLuzes(nomes) {
+  pararLuzes();
+  let ultimo = 0;
+  function tick(agora) {
+    if (agora - ultimo > 400) {
+      luzFrame++;
+      desenharRoleta(nomes);
+      ultimo = agora;
+    }
+    luzAnimId = requestAnimationFrame(tick);
+  }
+  luzAnimId = requestAnimationFrame(tick);
+}
+
+function pararLuzes() {
+  if (luzAnimId) {
+    cancelAnimationFrame(luzAnimId);
+    luzAnimId = null;
+  }
+}
+
+// ==========================================
+//  SONS DA ROLETA (Web Audio API)
+// ==========================================
+let audioCtx = null;
+
+function getAudioCtx() {
+  if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  return audioCtx;
+}
+
+function somTick(velocidade) {
+  try {
+    const ctx = getAudioCtx();
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    osc.type = 'sine';
+    osc.frequency.value = 800 + Math.random() * 400;
+    gain.gain.value = 0.06 + velocidade * 0.04;
+    osc.start();
+    osc.stop(ctx.currentTime + 0.03);
+  } catch (_) {}
+}
+
+function somVitoria() {
+  try {
+    const ctx = getAudioCtx();
+    const notas = [523, 659, 784, 1047];
+    notas.forEach((freq, i) => {
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.type = 'sine';
+      osc.frequency.value = freq;
+      gain.gain.setValueAtTime(0.12, ctx.currentTime + i * 0.12);
+      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + i * 0.12 + 0.3);
+      osc.start(ctx.currentTime + i * 0.12);
+      osc.stop(ctx.currentTime + i * 0.12 + 0.3);
+    });
+  } catch (_) {}
 }
 
 function girarRoleta(nomes, nomeDestino, callback) {
+  pararLuzes();
   const fatia = (2 * Math.PI) / nomes.length;
   const indiceDestino = nomes.indexOf(nomeDestino);
 
@@ -292,20 +507,30 @@ function girarRoleta(nomes, nomeDestino, callback) {
   const alvoAngulo = -Math.PI / 2 - indiceDestino * fatia - fatia / 2;
   const deltaAngulo = voltasExtras + (alvoAngulo - anguloAtual);
 
-  const duracao = 4000;
+  const duracao = 3000;
   const inicioTempo = performance.now();
   const anguloInicial = anguloAtual;
+  let ultimaFatia = -1;
 
   function animar(agora) {
     const progresso = Math.min((agora - inicioTempo) / duracao, 1);
-    const ease = 1 - Math.pow(1 - progresso, 3);
+    const ease = 1 - Math.pow(1 - progresso, 4);
 
     anguloAtual = anguloInicial + deltaAngulo * ease;
+    luzFrame++;
     desenharRoleta(nomes);
+
+    const fatiaAtual = Math.floor(((anguloAtual % (Math.PI * 2)) + Math.PI * 2) / fatia) % nomes.length;
+    if (fatiaAtual !== ultimaFatia) {
+      somTick(1 - progresso);
+      ultimaFatia = fatiaAtual;
+    }
 
     if (progresso < 1) {
       requestAnimationFrame(animar);
     } else {
+      somVitoria();
+      iniciarLuzes(nomes);
       callback();
     }
   }
@@ -399,6 +624,7 @@ function abrirRoletaLocal(nome) {
   const nomesRoleta = listaAmigos.filter(n => n !== nome);
   anguloAtual = 0;
   desenharRoleta(nomesRoleta);
+  iniciarLuzes(nomesRoleta);
   mostrarTela('telaRoleta');
 }
 
@@ -625,6 +851,7 @@ function revelarMeuAmigo() {
   const nomesRoleta = dadosSala.participantes.filter(n => n !== meuNome);
   anguloAtual = 0;
   desenharRoleta(nomesRoleta);
+  iniciarLuzes(nomesRoleta);
   mostrarTela('telaRoleta');
 }
 

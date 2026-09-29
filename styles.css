@@ -528,25 +528,38 @@ body::after {
   position: relative;
   display: flex;
   justify-content: center;
+  align-items: center;
   margin: 20px 0;
 }
 
 .roleta-pointer {
   position: absolute;
-  top: -10px;
+  top: -6px;
   left: 50%;
   transform: translateX(-50%);
   width: 0;
   height: 0;
-  border-left: 12px solid transparent;
-  border-right: 12px solid transparent;
-  border-top: 20px solid var(--c-600);
+  border-left: 14px solid transparent;
+  border-right: 14px solid transparent;
+  border-top: 28px solid #d4a017;
   z-index: 2;
+  filter: drop-shadow(0 2px 4px rgba(0,0,0,0.4));
+}
+
+.roleta-pointer::after {
+  content: '';
+  position: absolute;
+  top: -28px;
+  left: -10px;
+  width: 0;
+  height: 0;
+  border-left: 10px solid transparent;
+  border-right: 10px solid transparent;
+  border-top: 22px solid #f5d75e;
 }
 
 canvas {
   border-radius: 50%;
-  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.12);
 }
 
 /* SPINNER ASSISTINDO */
