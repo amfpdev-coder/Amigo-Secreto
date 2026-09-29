@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Amigo Secreto</title>
+  <link rel="icon" type="image/svg+xml" href="assets/favicon.svg">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+
+  <!-- TOGGLE CLARO/ESCURO -->
+  <button id="btnModo" class="btn-modo-toggle" title="Alternar modo claro/escuro">&#9728;&#65039;</button>
+
+  <main class="container">
+    <header class="header">
+      <img src="assets/avatar.png" alt="Ilustração de presente" class="avatar">
+      <h1>Amigo Secreto</h1>
+      <p class="subtitle">Sorteie de forma privada e divertida!</p>
+      <div class="regra-area">
+        <input id="inputRegra" type="text" class="input-regra" placeholder="Ex: Presentes até R$50" maxlength="100" />
+      </div>
+      <p id="bannerRegra" class="banner-regra hidden"></p>
+    </header>
+
+    <!-- TELA INÍCIO -->
+    <section id="telaInicio" class="card view">
+      <h2 class="card-title">Como quer jogar?</h2>
+      <div class="menu-opcoes">
+        <button id="btnLocal" class="btn-primary btn-full">Jogar no mesmo dispositivo</button>
+        <button id="btnCriarSala" class="btn-primary btn-full">Criar sala online</button>
+        <div class="divider"><span>ou entre numa sala</span></div>
+        <div class="input-area">
+          <input id="inputCodigo" type="text" placeholder="Código da sala" maxlength="6" />
+          <button id="btnEntrarSala" class="btn-add">Entrar</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- TELA CADASTRO (LOCAL) -->
+    <section id="telaCadastro" class="card view hidden">
+      <h2 class="card-title">Cadastre os participantes</h2>
+      <div class="input-area">
+        <input id="nomeAmigo" type="text" placeholder="Digite um nome..." />
+        <button id="btnAdd" class="btn-add">Adicionar</button>
+      </div>
+      <ul id="listaAmigos" class="lista" aria-live="polite"></ul>
+      <div class="buttons">
+        <button id="btnStart" class="btn-primary">Iniciar sorteio</button>
+        <button id="btnResetLocal" class="btn-secondary">Voltar</button>
+      </div>
+      <p class="hint">Nomes não podem se repetir. Cada pessoa verá só o seu resultado.</p>
+    </section>
+
+    <!-- TELA SELEÇÃO (LOCAL) -->
+    <section id="telaSelecao" class="card view hidden">
+      <h2 class="card-title">Quem vai ver agora?</h2>
+      <p class="hint" style="margin-bottom:12px">Clique no seu nome para revelar seu amigo secreto</p>
+      <div id="listaPessoas" class="person-list" role="list"></div>
+      <div class="buttons">
+        <button id="btnVoltar" class="btn-secondary">Voltar</button>
+      </div>
+    </section>
+
+    <!-- TELA ENTRAR COM NOME (ONLINE) -->
+    <section id="telaEntrarNome" class="card view hidden">
+      <h2 class="card-title">Sala: <span id="codigoSalaEntrar" class="codigo-sala"></span></h2>
+      <p class="hint">Digite seu nome para entrar na sala</p>
+      <div class="input-area" style="margin-top:16px">
+        <input id="inputMeuNome" type="text" placeholder="Seu nome..." />
+        <button id="btnEntrarComNome" class="btn-add">Entrar</button>
+      </div>
+      <div class="buttons" style="margin-top:12px">
+        <button id="btnVoltarEntrar" class="btn-secondary">Voltar</button>
+      </div>
+    </section>
+
+    <!-- TELA SALA (LOBBY ONLINE) -->
+    <section id="telaSala" class="card view hidden">
+      <div class="sala-header">
+        <h2 class="card-title">Sala: <span id="codigoSala" class="codigo-sala"></span></h2>
+        <button id="btnCopiarLink" class="btn-copiar" title="Copiar link">Copiar link</button>
+      </div>
+
+      <p class="hint" id="statusSala"></p>
+
+      <div id="listaParticipantesSala" class="participantes-sala"></div>
+
+      <!-- Antes do sorteio -->
+      <div id="salaAguardando">
+        <p class="hint" id="contadorJogadores"></p>
+        <div class="buttons">
+          <button id="btnIniciarSorteio" class="btn-primary btn-full" disabled>Iniciar sorteio</button>
+        </div>
+      </div>
+
+      <!-- Depois do sorteio -->
+      <div id="salaPronte" class="hidden">
+        <div class="buttons" style="flex-direction:column">
+          <button id="btnRevelar" class="btn-primary btn-full">Revelar meu amigo secreto</button>
+          <button id="btnRever" class="btn-secondary btn-full hidden">Rever meu amigo secreto</button>
+        </div>
+      </div>
+
+      <div class="buttons" style="margin-top:12px">
+        <button id="btnSairSala" class="btn-secondary btn-full">Sair da sala</button>
+        <button id="btnEncerrarSala" class="btn-secondary btn-full" style="color:#dc2626;border-color:#fca5a5">Encerrar sala</button>
+      </div>
+    </section>
+
+    <!-- TELA ROLETA -->
+    <section id="telaRoleta" class="card view hidden">
+      <h2 class="card-title" id="tituloRoleta">Girando...</h2>
+      <div class="roleta-wrapper">
+        <div class="roleta-pointer"></div>
+        <canvas id="roleta" width="300" height="300"></canvas>
+      </div>
+      <div class="buttons">
+        <button id="btnGirar" class="btn-primary">Girar!</button>
+      </div>
+    </section>
+
+    <!-- TELA RESULTADO PRIVADO -->
+    <section id="telaPrivada" class="card view hidden">
+      <h2 class="card-title">Olá, <span id="nomePessoaAtual"></span>!</h2>
+      <div id="privadoBox" class="resultado privado-box">
+        <p class="small">Seu amigo secreto é:</p>
+        <p id="resultadoPrivado" class="large"></p>
+      </div>
+      <div class="buttons">
+        <button id="btnOkPrivado" class="btn-primary">OK, esconder</button>
+      </div>
+    </section>
+
+  </main>
+
+  <footer class="footer">
+    Feito com &hearts; &mdash; <a href="https://storyset.com/people" target="_blank" rel="noopener">People illustrations by Storyset</a>
+  </footer>
+
+  <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore-compat.js"></script>
+  <script src="app.js" defer></script>
+</body>
+</html>
